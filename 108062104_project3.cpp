@@ -199,13 +199,56 @@ struct State {
 		this->p = p;
 		this->result = game;
 		this->result.put_disc(p, turn);
-		this->value = this->result.disc_count[player] - this->result.disc_count[3-player];
+		setValue(turn);
 	}
 	State() {
         this->original = Point();
         this->p = Point();
         this->result = OthelloBoard();
         this->value = 0;
+	}
+	void setValue(int turn) {
+        if( turn > 0 ) {
+            value = result.disc_count[player] - result.disc_count[3-player];
+            if( (original.x==0 && original.y==0) || (original.x==0 && original.y==7) || (original.x==7 && original.y==0) || (original.x==7 && original.y==7) ) {
+                value += 30;
+            }
+            else if( (original.x==0 && original.y==1) || (original.x==1 && original.y==0) || (original.x==1 && original.y==1) ||
+                     (original.x==0 && original.y==6) || (original.x==1 && original.y==7) || (original.x==1 && original.y==6) ||
+                     (original.x==6 && original.y==0) || (original.x==7 && original.y==1) || (original.x==6 && original.y==1) ||
+                     (original.x==7 && original.y==6) || (original.x==6 && original.y==6) || (original.x==6 && original.y==7) ) {
+                value -= 100000;
+            }
+            if( (p.x==0 && p.y==0) || (p.x==0 && p.y==7) || (p.x==7 && p.y==0) || (p.x==7 && p.y==7) ) {
+                value += 30;
+            }
+            else if( (p.x==0 && p.y==1) || (p.x==1 && p.y==0) || (p.x==1 && p.y==1) ||
+                     (p.x==0 && p.y==6) || (p.x==1 && p.y==7) || (p.x==1 && p.y==6) ||
+                     (p.x==6 && p.y==0) || (p.x==7 && p.y==1) || (p.x==6 && p.y==1) ||
+                     (p.x==7 && p.y==6) || (p.x==6 && p.y==6) || (p.x==6 && p.y==7) ) {
+                value -= 100000;
+            }
+            else if( p.x == 0 || p.y == 0 || p.x == 7 || p.y == 7 ) {
+                value += 15;
+            }
+        }
+        else {
+            value = result.disc_count[player] - result.disc_count[3-player];
+            if( (p.x==0 && p.y==0) || (p.x==0 && p.y==7) || (p.x==7 && p.y==0) || (p.x==7 && p.y==7) ) {
+                value -= 30;
+            }
+            else if( (p.x==0 && p.y==1) || (p.x==1 && p.y==0) || (p.x==1 && p.y==1) ||
+                     (p.x==0 && p.y==6) || (p.x==1 && p.y==7) || (p.x==1 && p.y==6) ||
+                     (p.x==6 && p.y==0) || (p.x==7 && p.y==1) || (p.x==6 && p.y==1) ||
+                     (p.x==7 && p.y==6) || (p.x==6 && p.y==6) || (p.x==6 && p.y==7) ) {
+                value += 30;
+            }
+            else if( p.x == 0 || p.y == 0 || p.x == 7 || p.y == 7 ) {
+                value -= 15;
+            }
+        }
+        if( value < 0 )
+            std::cout << "value = " << value << std::endl;
 	}
 };
 
