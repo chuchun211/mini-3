@@ -218,19 +218,22 @@ struct State {
                      (board[0][7]==0 && ((original.x==0 && original.y==6) || (original.x==1 && original.y==7) || (original.x==1 && original.y==6))) ||
                      (board[7][0]==0 && ((original.x==6 && original.y==0) || (original.x==7 && original.y==1) || (original.x==6 && original.y==1))) ||
                      (board[7][7]==0 && ((original.x==7 && original.y==6) || (original.x==6 && original.y==6) || (original.x==6 && original.y==7))) ) {
-                v -= 100000;
+                v -= 100;
+            }
+            else if( original.x == 0 || original.y == 0 || original.x == 7 || original.y == 7 ) {
+                v += 15;
             }
             if( (p.x==0 && p.y==0) || (p.x==0 && p.y==7) || (p.x==7 && p.y==0) || (p.x==7 && p.y==7) ) {
-                v += 30;
+                v += 10;
             }
             else if( (board[0][0]==0 && ((p.x==0 && p.y==1) || (p.x==1 && p.y==0) || (p.x==1 && p.y==1))) ||
                      (board[0][7]==0 && ((p.x==0 && p.y==6) || (p.x==1 && p.y==7) || (p.x==1 && p.y==6))) ||
                      (board[7][0]==0 && ((p.x==6 && p.y==0) || (p.x==7 && p.y==1) || (p.x==6 && p.y==1))) ||
                      (board[7][7]==0 && ((p.x==7 && p.y==6) || (p.x==6 && p.y==6) || (p.x==6 && p.y==7))) ) {
-                v -= 100000;
+                v -= 10;
             }
             else if( p.x == 0 || p.y == 0 || p.x == 7 || p.y == 7 ) {
-                v += 15;
+                v += 5;
             }
             return v;
         }
