@@ -6,7 +6,7 @@
 #include <ctime>
 #include <sstream>
 #include <queue>
-#include <string>
+#include <climits>
 
 struct Point {
     int x, y;
@@ -181,68 +181,6 @@ public:
         }
         return true;
     }
-    std::string encode_player(int state) {
-        if (state == BLACK) return "O";
-        if (state == WHITE) return "X";
-        return "Draw";
-    }
-    std::string encode_spot(int x, int y) {
-        if (is_spot_valid(Point(x, y))) return ".";
-        if (board[x][y] == BLACK) return "O";
-        if (board[x][y] == WHITE) return "X";
-        return " ";
-    }
-    std::string encode_output(bool fail=false) {
-        int i, j;
-        std::stringstream ss;
-        ss << "Timestep #" << (8*8-4-disc_count[EMPTY]+1) << "\n";
-        ss << "O: " << disc_count[BLACK] << "; X: " << disc_count[WHITE] << "\n";
-        if (fail) {
-            ss << "Winner is " << encode_player(winner) << " (Opponent performed invalid move)\n";
-        } else if (next_valid_spots.size() > 0) {
-            ss << encode_player(cur_player) << "'s turn\n";
-        } else {
-            ss << "Winner is " << encode_player(winner) << "\n";
-        }
-        ss << "+---------------+\n";
-        for (i = 0; i < SIZE; i++) {
-            ss << "|";
-            for (j = 0; j < SIZE-1; j++) {
-                ss << encode_spot(i, j) << " ";
-            }
-            ss << encode_spot(i, j) << "|\n";
-        }
-        ss << "+---------------+\n";
-        ss << next_valid_spots.size() << " valid moves: {";
-        if (next_valid_spots.size() > 0) {
-            Point p = next_valid_spots[0];
-            ss << "(" << p.x << "," << p.y << ")";
-        }
-        for (size_t i = 1; i < next_valid_spots.size(); i++) {
-            Point p = next_valid_spots[i];
-            ss << ", (" << p.x << "," << p.y << ")";
-        }
-        ss << "}\n";
-        ss << "=================\n";
-        return ss.str();
-    }
-    std::string encode_state() {
-        int i, j;
-        std::stringstream ss;
-        ss << cur_player << "\n";
-        for (i = 0; i < SIZE; i++) {
-            for (j = 0; j < SIZE-1; j++) {
-                ss << board[i][j] << " ";
-            }
-            ss << board[i][j] << "\n";
-        }
-        ss << next_valid_spots.size() << "\n";
-        for (size_t i = 0; i < next_valid_spots.size(); i++) {
-            Point p = next_valid_spots[i];
-            ss << p.x << " " << p.y << "\n";
-        }
-        return ss.str();
-    }
 };
 
 
@@ -257,12 +195,12 @@ struct State {
 	Point p;
 	OthelloBoard result;
 	int value;
-	State(Point o, Point p, OthelloBoard& game, int turn) {
+	State(Point o, Point p, OthelloBoard& game, int depth, int alpha, int beta, bool maximizingPlayer) {
 		this->original = o;
 		this->p = p;
 		this->result = game;
-		this->result.put_disc(p, turn);
-		setValue(turn);
+		this->result.put_disc(p, depth);
+		this->value = setValue(depth, alpha, beta, maximizingPlayer);
 	}
 	State() {
         this->original = Point();
@@ -270,48 +208,52 @@ struct State {
         this->result = OthelloBoard();
         this->value = 0;
 	}
-	void setValue(int turn) {
-        if( turn > 0 ) {
-            value = result.disc_count[player] - result.disc_count[3-player];
+	int setValue(int depth, int alpha, int beta, bool maximizingPlayer) {
+        if( depth == 0 || next_valid_spots.size() == 0 ) {
+            int v = result.disc_count[player] - result.disc_count[3-player];
             if( (original.x==0 && original.y==0) || (original.x==0 && original.y==7) || (original.x==7 && original.y==0) || (original.x==7 && original.y==7) ) {
-                value += 30;
+                v += 30;
             }
             else if( (board[0][0]==0 && ((original.x==0 && original.y==1) || (original.x==1 && original.y==0) || (original.x==1 && original.y==1))) ||
                      (board[0][7]==0 && ((original.x==0 && original.y==6) || (original.x==1 && original.y==7) || (original.x==1 && original.y==6))) ||
                      (board[7][0]==0 && ((original.x==6 && original.y==0) || (original.x==7 && original.y==1) || (original.x==6 && original.y==1))) ||
                      (board[7][7]==0 && ((original.x==7 && original.y==6) || (original.x==6 && original.y==6) || (original.x==6 && original.y==7))) ) {
-                value -= 100000;
+                v -= 100000;
             }
             if( (p.x==0 && p.y==0) || (p.x==0 && p.y==7) || (p.x==7 && p.y==0) || (p.x==7 && p.y==7) ) {
-                value += 30;
+                v += 30;
             }
             else if( (board[0][0]==0 && ((p.x==0 && p.y==1) || (p.x==1 && p.y==0) || (p.x==1 && p.y==1))) ||
                      (board[0][7]==0 && ((p.x==0 && p.y==6) || (p.x==1 && p.y==7) || (p.x==1 && p.y==6))) ||
                      (board[7][0]==0 && ((p.x==6 && p.y==0) || (p.x==7 && p.y==1) || (p.x==6 && p.y==1))) ||
                      (board[7][7]==0 && ((p.x==7 && p.y==6) || (p.x==6 && p.y==6) || (p.x==6 && p.y==7))) ) {
-                value -= 100000;
+                v -= 100000;
             }
             else if( p.x == 0 || p.y == 0 || p.x == 7 || p.y == 7 ) {
-                value += 15;
+                v += 15;
             }
+            return v;
+        }
+        if(maximizingPlayer) {
+            int v = INT_MIN;
+            for( Point a : next_valid_spots ) {
+                State t(original, a, result, depth-1, alpha, beta, false);
+                v = std::max(v, t.value);
+                alpha = std::max(alpha, value);
+                if( alpha >= beta ) break;
+            }
+            return v;
         }
         else {
-            value = result.disc_count[player] - result.disc_count[3-player];
-            if( (p.x==0 && p.y==0) || (p.x==0 && p.y==7) || (p.x==7 && p.y==0) || (p.x==7 && p.y==7) ) {
-                value -= 30;
+            int v = INT_MAX;
+            for( Point a : next_valid_spots ) {
+                State t(original, a, result, depth-1, alpha, beta, true);
+                v = std::min(v, t.value);
+                beta = std::min(beta, v);
+                if( beta <= alpha ) break;
             }
-            else if( (p.x==0 && p.y==1) || (p.x==1 && p.y==0) || (p.x==1 && p.y==1) ||
-                     (p.x==0 && p.y==6) || (p.x==1 && p.y==7) || (p.x==1 && p.y==6) ||
-                     (p.x==6 && p.y==0) || (p.x==7 && p.y==1) || (p.x==6 && p.y==1) ||
-                     (p.x==7 && p.y==6) || (p.x==6 && p.y==6) || (p.x==6 && p.y==7) ) {
-                value += 30;
-            }
-            else if( p.x == 0 || p.y == 0 || p.x == 7 || p.y == 7 ) {
-                value -= 15;
-            }
+            return v;
         }
-        if( value < 0 )
-            std::cout << "value = " << value << std::endl;
 	}
 };
 
@@ -339,37 +281,27 @@ void read_valid_spots(std::ifstream& fin) {
 
 void write_valid_spot(std::ofstream& fout) {
     int n_valid_spots = next_valid_spots.size();
-	std::queue<State> q;
-	for(int i=0; i<n_valid_spots; i++) {
-		q.push(State(next_valid_spots[i], next_valid_spots[i], game, 1));
-	}
+    int depth = 0;
     // Keep updating the output until getting killed.
-    int turn = 1;
-    size_t num = q.size();
     while (true) {
 		State t;
-		t = q.front();
-        while( num-- ) {
-            State tmp;
-            tmp = q.front();
-			for(size_t i=0; i<tmp.result.next_valid_spots.size(); i++) {
-                q.push(State(tmp.original, tmp.result.next_valid_spots[i], tmp.result, turn));
-			}
+		State tmp;
+		t = State(next_valid_spots[0], next_valid_spots[0], game, depth, INT_MIN, INT_MAX, true);
+        for(int i = 1; i < n_valid_spots; i++) {
+            tmp = State(next_valid_spots[i], next_valid_spots[i], game, depth, INT_MIN, INT_MAX, true);
             if(tmp.value > t.value) {
                 t.original = tmp.original;
                 t.p = tmp.p;
                 t.result = tmp.result;
                 t.value = tmp.value;
             }
-			q.pop();
 		}
         // Remember to flush the output to ensure the last action is written to file.
         fout << t.original.x << " " << t.original.y << std::endl;
-        std::cout << turn << "\t" << t.original.x << " " << t.original.y << std::endl;
+        std::cout << depth << "\t" << t.original.x << " " << t.original.y << std::endl;
 
         fout.flush();
-		turn *= -1;
-		num = q.size();
+        depth++;
     }
 }
 
