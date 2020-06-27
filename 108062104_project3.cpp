@@ -151,13 +151,13 @@ public:
         }
         return valid_spots;
     }
-    bool put_disc(Point p, int turn) {
+    bool put_disc(Point p, int depth) {
         if(!is_spot_valid(p)) {
             winner = get_next_player(cur_player);
             done = true;
             return false;
         }
-        cur_player = (turn == 1) ? cur_player : get_next_player(cur_player);
+        cur_player = (depth % 2 == 0) ? cur_player : get_next_player(cur_player);
         set_disc(p, cur_player);
         disc_count[cur_player]++;
         disc_count[EMPTY]--;
