@@ -200,7 +200,7 @@ struct State {
 		this->p = p;
 		this->result = game;
 		this->result.put_disc(p, depth);
-		this->value = setValue(depth, alpha, beta, maximizingPlayer);
+		this->value = minimax(depth, alpha, beta, maximizingPlayer);
 	}
 	State() {
         this->original = Point();
@@ -208,34 +208,37 @@ struct State {
         this->result = OthelloBoard();
         this->value = 0;
 	}
-	int setValue(int depth, int alpha, int beta, bool maximizingPlayer) {
+	int setValue() {
+        int v = result.disc_count[player] - result.disc_count[3-player];
+        if( (original.x==0 && original.y==0) || (original.x==0 && original.y==7) || (original.x==7 && original.y==0) || (original.x==7 && original.y==7) ) {
+            v += 20;
+        }
+        else if( (board[0][0]==0 && ((original.x==0 && original.y==1) || (original.x==1 && original.y==0) || (original.x==1 && original.y==1))) ||
+                 (board[0][7]==0 && ((original.x==0 && original.y==6) || (original.x==1 && original.y==7) || (original.x==1 && original.y==6))) ||
+                 (board[7][0]==0 && ((original.x==6 && original.y==0) || (original.x==7 && original.y==1) || (original.x==6 && original.y==1))) ||
+                 (board[7][7]==0 && ((original.x==7 && original.y==6) || (original.x==6 && original.y==6) || (original.x==6 && original.y==7))) ) {
+            v -= 30;
+        }
+        else if( original.x == 0 || original.y == 0 || original.x == 7 || original.y == 7 ) {
+            v += 10;
+        }
+        if( (p.x==0 && p.y==0) || (p.x==0 && p.y==7) || (p.x==7 && p.y==0) || (p.x==7 && p.y==7) ) {
+            v += 10;
+        }
+        else if( (board[0][0]==0 && ((p.x==0 && p.y==1) || (p.x==1 && p.y==0) || (p.x==1 && p.y==1))) ||
+                 (board[0][7]==0 && ((p.x==0 && p.y==6) || (p.x==1 && p.y==7) || (p.x==1 && p.y==6))) ||
+                 (board[7][0]==0 && ((p.x==6 && p.y==0) || (p.x==7 && p.y==1) || (p.x==6 && p.y==1))) ||
+                 (board[7][7]==0 && ((p.x==7 && p.y==6) || (p.x==6 && p.y==6) || (p.x==6 && p.y==7))) ) {
+            v -= 10;
+        }
+        else if( p.x == 0 || p.y == 0 || p.x == 7 || p.y == 7 ) {
+            v += 5;
+        }
+        return v;
+	}
+	int minimax(int depth, int alpha, int beta, bool maximizingPlayer) {
         if( depth == 0 || next_valid_spots.size() == 0 ) {
-            int v = result.disc_count[player] - result.disc_count[3-player];
-            if( (original.x==0 && original.y==0) || (original.x==0 && original.y==7) || (original.x==7 && original.y==0) || (original.x==7 && original.y==7) ) {
-                v += 30;
-            }
-            else if( (board[0][0]==0 && ((original.x==0 && original.y==1) || (original.x==1 && original.y==0) || (original.x==1 && original.y==1))) ||
-                     (board[0][7]==0 && ((original.x==0 && original.y==6) || (original.x==1 && original.y==7) || (original.x==1 && original.y==6))) ||
-                     (board[7][0]==0 && ((original.x==6 && original.y==0) || (original.x==7 && original.y==1) || (original.x==6 && original.y==1))) ||
-                     (board[7][7]==0 && ((original.x==7 && original.y==6) || (original.x==6 && original.y==6) || (original.x==6 && original.y==7))) ) {
-                v -= 100;
-            }
-            else if( original.x == 0 || original.y == 0 || original.x == 7 || original.y == 7 ) {
-                v += 15;
-            }
-            if( (p.x==0 && p.y==0) || (p.x==0 && p.y==7) || (p.x==7 && p.y==0) || (p.x==7 && p.y==7) ) {
-                v += 10;
-            }
-            else if( (board[0][0]==0 && ((p.x==0 && p.y==1) || (p.x==1 && p.y==0) || (p.x==1 && p.y==1))) ||
-                     (board[0][7]==0 && ((p.x==0 && p.y==6) || (p.x==1 && p.y==7) || (p.x==1 && p.y==6))) ||
-                     (board[7][0]==0 && ((p.x==6 && p.y==0) || (p.x==7 && p.y==1) || (p.x==6 && p.y==1))) ||
-                     (board[7][7]==0 && ((p.x==7 && p.y==6) || (p.x==6 && p.y==6) || (p.x==6 && p.y==7))) ) {
-                v -= 10;
-            }
-            else if( p.x == 0 || p.y == 0 || p.x == 7 || p.y == 7 ) {
-                v += 5;
-            }
-            return v;
+            return setValue();
         }
         if(maximizingPlayer) {
             int v = INT_MIN;
