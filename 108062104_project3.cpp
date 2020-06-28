@@ -8,6 +8,9 @@
 #include <queue>
 #include <climits>
 
+int player;
+const int SIZE = 8;
+
 struct Point {
     int x, y;
 	Point() : Point(0, 0) {}
@@ -157,7 +160,7 @@ public:
             done = true;
             return false;
         }
-        cur_player = (depth % 2 == 0) ? cur_player : get_next_player(cur_player);
+        cur_player = (depth % 2 == 0) ? player : get_next_player(player);
         set_disc(p, cur_player);
         disc_count[cur_player]++;
         disc_count[EMPTY]--;
@@ -183,9 +186,6 @@ public:
     }
 };
 
-
-int player;
-const int SIZE = 8;
 std::array<std::array<int, SIZE>, SIZE> board;
 std::vector<Point> next_valid_spots;
 OthelloBoard game;
@@ -208,37 +208,41 @@ struct State {
         this->result = OthelloBoard();
         this->value = 0;
 	}
-	int setValue() {
+	int setValue(bool maximizingPlayer) {
         int v = result.disc_count[player] - result.disc_count[3-player];
         if( (original.x==0 && original.y==0) || (original.x==0 && original.y==7) || (original.x==7 && original.y==0) || (original.x==7 && original.y==7) ) {
-            v += 20;
+            v += 40;
         }
         else if( (board[0][0]==0 && ((original.x==0 && original.y==1) || (original.x==1 && original.y==0) || (original.x==1 && original.y==1))) ||
                  (board[0][7]==0 && ((original.x==0 && original.y==6) || (original.x==1 && original.y==7) || (original.x==1 && original.y==6))) ||
                  (board[7][0]==0 && ((original.x==6 && original.y==0) || (original.x==7 && original.y==1) || (original.x==6 && original.y==1))) ||
                  (board[7][7]==0 && ((original.x==7 && original.y==6) || (original.x==6 && original.y==6) || (original.x==6 && original.y==7))) ) {
-            v -= 30;
+            v -= 40;
         }
         else if( original.x == 0 || original.y == 0 || original.x == 7 || original.y == 7 ) {
-            v += 10;
+            v += 20;
         }
         if( (p.x==0 && p.y==0) || (p.x==0 && p.y==7) || (p.x==7 && p.y==0) || (p.x==7 && p.y==7) ) {
-            v += 10;
+            v += 20;
         }
         else if( (board[0][0]==0 && ((p.x==0 && p.y==1) || (p.x==1 && p.y==0) || (p.x==1 && p.y==1))) ||
                  (board[0][7]==0 && ((p.x==0 && p.y==6) || (p.x==1 && p.y==7) || (p.x==1 && p.y==6))) ||
                  (board[7][0]==0 && ((p.x==6 && p.y==0) || (p.x==7 && p.y==1) || (p.x==6 && p.y==1))) ||
                  (board[7][7]==0 && ((p.x==7 && p.y==6) || (p.x==6 && p.y==6) || (p.x==6 && p.y==7))) ) {
-            v -= 10;
+            v -= 20;
         }
         else if( p.x == 0 || p.y == 0 || p.x == 7 || p.y == 7 ) {
-            v += 5;
+            v += 10;
         }
+        if( result.disc_count[0] < 15 ) return v;
+        if( maximizingPlayer ) v += result.next_valid_spots.size();
+        else v -= result.next_valid_spots.size();
         return v;
 	}
 	int minimax(int depth, int alpha, int beta, bool maximizingPlayer) {
-        if( depth == 0 || next_valid_spots.size() == 0 ) {
-            return setValue();
+        if( depth == 0 || result.next_valid_spots.size() == 0 ) {
+            int v = setValue(maximizingPlayer);
+            return v;
         }
         if(maximizingPlayer) {
             int v = INT_MIN;
@@ -287,7 +291,7 @@ void read_valid_spots(std::ifstream& fin) {
 
 void write_valid_spot(std::ofstream& fout) {
     int n_valid_spots = next_valid_spots.size();
-    int depth = 0;
+    int depth = 3;
     // Keep updating the output until getting killed.
     while (true) {
 		State t;
@@ -304,7 +308,6 @@ void write_valid_spot(std::ofstream& fout) {
 		}
         // Remember to flush the output to ensure the last action is written to file.
         fout << t.original.x << " " << t.original.y << std::endl;
-        std::cout << depth << "\t" << t.original.x << " " << t.original.y << std::endl;
 
         fout.flush();
         depth++;
